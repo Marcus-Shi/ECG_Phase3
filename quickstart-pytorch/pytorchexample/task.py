@@ -168,11 +168,10 @@ def load_centralized_testset():
 # =============================================================================
 # 3. 训练与测试辅助函数
 # =============================================================================
-
 def train_one_epoch(net, trainloader, device, lr):
     """在一个病人的数据上训练一个 epoch (Local Update)"""
     criterion = torch.nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr) # 或 SGD
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     net.train()
     
     total_loss = 0.0
@@ -188,24 +187,47 @@ def train_one_epoch(net, trainloader, device, lr):
     return total_loss / len(trainloader)
 
 def test(net, testloader, device):
-    """评估模型"""
+    """
+    评估模型，计算详细指标: Loss, Acc, Precision, Recall, F1 (Macro)
+    """
     if testloader is None:
-        return 0.0, 0.0
+        return {}
         
     net.to(device)
     net.eval()
     criterion = torch.nn.CrossEntropyLoss()
-    correct, total, loss = 0, 0, 0.0
+    
+    total_loss = 0.0
+    all_labels = []
+    all_preds = []
     
     with torch.no_grad():
         for images, labels in testloader:
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
-            loss += criterion(outputs, labels).item()
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            loss = criterion(outputs, labels)
+            total_loss += loss.item()
             
-    accuracy = correct / total if total > 0 else 0
-    avg_loss = loss / len(testloader)
-    return avg_loss, accuracy
+            # 获取预测类别
+            _, predicted = torch.max(outputs.data, 1)
+            
+            # 收集结果用于 sklearn 计算
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(predicted.cpu().numpy())
+            
+    # 计算平均 Loss
+    avg_loss = total_loss / len(testloader)
+    
+    # 计算指标 (Macro Average)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        all_labels, all_preds, average='macro', zero_division=0
+    )
+    acc = accuracy_score(all_labels, all_preds)
+    
+    return {
+        "loss": avg_loss,
+        "accuracy": acc,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
