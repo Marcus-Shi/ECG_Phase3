@@ -1,4 +1,4 @@
-# marcus-shi/ecg_phase3/ECG_Phase3-ec1bb3f03abae1d74da6110dad4af62b3796a611/quickstart-pytorch/pytorchexample/server_app.py
+"""pytorchexample: A Flower / PyTorch app."""
 
 from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
@@ -12,20 +12,27 @@ app = ServerApp()
 @app.main()
 def main(grid: Grid, context: Context) -> None:
     
+    # 读取配置
     num_rounds = context.run_config["num-server-rounds"]
     lr = context.run_config["learning-rate"]
     
     print(f"--- Starting HFL Server for {num_rounds} Rounds ---")
 
+    # 初始化全局模型
     global_model = Net()
     arrays = ArrayRecord(global_model.state_dict())
     
+    # 定义 Cloud 端策略
+    # 【注意】参数名已更新适配 Flower 1.23+ (ServerApp 模式)
     strategy = FedAvg(
-        fraction_fit=1.0,
-        fraction_evaluate=1.0,
-        min_fit_clients=2,
+        fraction_train=1.0,       # 原 fraction_fit
+        fraction_evaluate=1.0,    # 保持不变
+        min_train_nodes=2,        # 原 min_fit_clients
+        min_evaluate_nodes=2,     # 原 min_evaluate_clients
+        min_available_nodes=2,    # 原 min_available_clients
     )
 
+    # 启动 Cloud Server
     result = strategy.start(
         grid=grid,
         initial_arrays=arrays,
@@ -35,6 +42,7 @@ def main(grid: Grid, context: Context) -> None:
     )
     
     print("\n--- Federated Learning Finished ---")
+    # 保存结果
     state_dict = result.arrays.to_torch_state_dict()
     torch.save(state_dict, "final_model_hierarchical.pt")
 
