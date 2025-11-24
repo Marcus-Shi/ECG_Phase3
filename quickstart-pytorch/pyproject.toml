@@ -1,3 +1,5 @@
+# marcus-shi/ecg_phase3/ECG_Phase3-ec1bb3f03abae1d74da6110dad4af62b3796a611/quickstart-pytorch/pyproject.toml
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -5,13 +7,14 @@ build-backend = "hatchling.build"
 [project]
 name = "pytorchexample"
 version = "1.0.0"
-description = "Federated Learning with PyTorch and Flower (Quickstart Example)"
+description = "Hierarchical Federated Learning for ECG"
 license = "Apache-2.0"
 dependencies = [
     "flwr[simulation]>=1.23.0",
-    "flwr-datasets[vision]>=0.5.0",
-    "torch==2.8.0",
-    "torchvision==0.23.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "numpy",
+    "scikit-learn",  # 如果需要计算额外的指标
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -25,19 +28,25 @@ serverapp = "pytorchexample.server_app:app"
 clientapp = "pytorchexample.client_app:app"
 
 [tool.flwr.app.config]
-num-server-rounds = 3
-fraction-evaluate = 0.5
-local-epochs = 1
-learning-rate = 0.1
+num-server-rounds = 10      # 全局聚合轮数 (Cloud Aggregation)
+fraction-evaluate = 1.0     # 每轮评估所有 Cluster Leader
+learning-rate = 0.001       # 学习率
 batch-size = 32
+
+# Hierarchical FL Parameters
+kappa-1 = 5                 # 本地更新次数 (Local Updates per Patient)
+kappa-2 = 2                 # 边缘聚合次数 (Edge Aggregations per Round)
+# 说明: 每个 Global Round 包含 kappa-2 次 Edge Aggregation
+# 每次 Edge Aggregation 包含 kappa-1 次 Local Update
 
 [tool.flwr.federations]
 default = "local-simulation"
 
 [tool.flwr.federations.local-simulation]
-options.num-supernodes = 10
+# 假设我们要将其分为 5 个簇 (根据 y_train 第8列的标签数量决定)
+options.num-supernodes = 50  
 
 [tool.flwr.federations.local-simulation-gpu]
-options.num-supernodes = 10
-options.backend.client-resources.num-cpus = 2 # each ClientApp assumes to use 2CPUs
-options.backend.client-resources.num-gpus = 0.2 # at most 5 ClientApp will run in a given GPU
+options.num-supernodes = 50
+options.backend.client-resources.num-cpus = 2
+options.backend.client-resources.num-gpus = 0.2
