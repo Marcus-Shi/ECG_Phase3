@@ -26,9 +26,9 @@ def main(grid: Grid, context: Context) -> None:
     # 【注意】参数名已更新适配 Flower 1.23+ (ServerApp 模式)
     strategy = FedAvg(
         fraction_train=1.0,       # 原 fraction_fit
-        fraction_evaluate=1.0,    # 保持不变
+        fraction_evaluate=0,      # 暂时禁用
         min_train_nodes=2,        # 原 min_fit_clients
-        min_evaluate_nodes=2,     # 原 min_evaluate_clients
+        min_evaluate_nodes=0,     # 暂时禁用
         min_available_nodes=2,    # 原 min_available_clients
     )
 
