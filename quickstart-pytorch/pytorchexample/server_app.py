@@ -3,7 +3,7 @@
 from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
 from flwr.serverapp.strategy import FedAvg
-from pytorchexample.task import Net, load_centralized_testset, test
+from phase3.task import Net, load_centralized_testset, test
 import torch
 import time
 
