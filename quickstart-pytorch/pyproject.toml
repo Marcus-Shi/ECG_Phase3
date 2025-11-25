@@ -48,5 +48,5 @@ options.num-supernodes = 50
 
 [tool.flwr.federations.local-simulation-gpu]
 options.num-supernodes = 50
-options.backend.client-resources.num-cpus = 2
-options.backend.client-resources.num-gpus = 0.2
+options.backend.client-resources.num-cpus = 4
+options.backend.client-resources.num-gpus = 0.05
