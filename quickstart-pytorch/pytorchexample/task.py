@@ -80,6 +80,7 @@ class Net(nn.Module):
 
 DATA_ROOT = "./data"
 
+
 def load_data(partition_id: int, num_partitions: int, batch_size: int):
     """
     加载并划分数据用于分层联邦学习。
@@ -90,12 +91,15 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
     y_train = np.load(os.path.join(DATA_ROOT, "y_train.npy"))
     
     # 2. 根据 Cluster Label (第8列) 筛选数据
+    # 训练集通常是完整的，但为了保险也可以加个检查
+    if y_train.shape[1] <= 8:
+        raise ValueError(f"Error: y_train.npy has {y_train.shape[1]} columns, but column 8 (cluster label) is required.")
+
     cluster_mask = (y_train[:, 8] == partition_id)
     X_cluster = X_train[cluster_mask]
     y_cluster = y_train[cluster_mask]
     
     if len(X_cluster) == 0:
-        # 为了防止报错，如果某个 Cluster 没数据，返回空字典
         print(f"Warning: Cluster {partition_id} has no data.")
         return {}, None
 
@@ -118,20 +122,27 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         patient_dataloaders[pid] = loader
 
-    # 4. 加载验证集
+    # 4. 加载验证集 (带安全检查)
     X_val = np.load(os.path.join(DATA_ROOT, "X_val.npy"))
     y_val = np.load(os.path.join(DATA_ROOT, "y_val.npy"))
     
-    val_mask = (y_val[:, 8] == partition_id)
-    if np.sum(val_mask) > 0:
-        X_val_c = X_val[val_mask]
-        y_val_c = y_val[val_mask]
-        y_val_labels = np.argmax(y_val_c[:, 0:5], axis=1)
-        
-        val_dataset = TensorDataset(torch.Tensor(X_val_c), torch.LongTensor(y_val_labels))
-        val_loader = DataLoader(val_dataset, batch_size=batch_size)
-    else:
+    # 【修复】检查 y_val 是否有第 8 列
+    if y_val.shape[1] <= 8:
+        # 如果 y_val 缺少聚类标签，打印警告并跳过验证集加载
+        # 这样不会导致 Crash，只是这个 Client 没有验证集而已
+        # print(f"[Warning] y_val.npy only has {y_val.shape[1]} columns. Missing Cluster Label (col 8). Skipping local evaluation.")
         val_loader = None
+    else:
+        val_mask = (y_val[:, 8] == partition_id)
+        if np.sum(val_mask) > 0:
+            X_val_c = X_val[val_mask]
+            y_val_c = y_val[val_mask]
+            y_val_labels = np.argmax(y_val_c[:, 0:5], axis=1)
+            
+            val_dataset = TensorDataset(torch.Tensor(X_val_c), torch.LongTensor(y_val_labels))
+            val_loader = DataLoader(val_dataset, batch_size=batch_size)
+        else:
+            val_loader = None
 
     return patient_dataloaders, val_loader
 
