@@ -5,7 +5,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pytorchexample"
+name = "phase3"
 version = "1.0.0"
 description = "Hierarchical Federated Learning for ECG"
 license = "Apache-2.0"
@@ -24,8 +24,8 @@ packages = ["."]
 publisher = "flwrlabs"
 
 [tool.flwr.app.components]
-serverapp = "pytorchexample.server_app:app"
-clientapp = "pytorchexample.client_app:app"
+serverapp = "phase3.server_app:app"
+clientapp = "phase3.client_app:app"
 
 [tool.flwr.app.config]
 num-server-rounds = 10      # 全局聚合轮数 (Cloud Aggregation)
