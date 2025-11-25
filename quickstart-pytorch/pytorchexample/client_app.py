@@ -7,7 +7,7 @@ from collections import OrderedDict
 from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 
-from pytorchexample.task import Net, load_data, train_one_epoch, test
+from phase3.task import Net, load_data, train_one_epoch, test
 
 app = ClientApp()
 
